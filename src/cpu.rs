@@ -6,16 +6,29 @@ use crate::serial::SerialCallback;
 use crate::StrResult;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Action {
+    ExecutedOp(u8),
+    ExecutedPrefixedOp(u8),
+    VBlank,
+    Lcd,
+    Timer,
+    Serial,
+    Joypad,
+    Halted,
+    Stopped,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct CPU {
-    reg: Registers,
+    pub reg: Registers,
     pub mmu: MMU,
     halted: bool,
     /// Accurate emulation means emulating that when interrupts are set, IME is off, and HALT is
     /// called, the PC fails to increment on the next byte instruction.
     /// https://github.com/geaz/emu-gameboy/blob/master/docs/The%20Cycle-Accurate%20Game%20Boy%20Docs.pdf
     halt_bug: bool,
-    ime: bool,
+    pub ime: bool,
     setdi: u32,
     setei: u32,
 }
@@ -55,21 +68,21 @@ impl CPU {
         })
     }
 
-    pub fn do_cycle(&mut self) -> u32 {
-        let ticks = self.docycle() * 4;
-        return self.mmu.do_cycle(ticks);
+    pub fn do_cycle(&mut self) -> (u32, Action) {
+        let (ticks, action) = self.docycle();
+        return (self.mmu.do_cycle(ticks * 4), action);
     }
 
-    fn docycle(&mut self) -> u32 {
+    fn docycle(&mut self) -> (u32, Action) {
         self.updateime();
         match self.handleinterrupt() {
-            0 => {}
-            n => return n,
+            (0, _) => {}
+            (n, action) => return (n, action.unwrap()),
         };
 
         if self.halted {
             // Emulate a noop instruction
-            1
+            (1, Action::Halted)
         } else {
             self.call()
         }
@@ -110,32 +123,37 @@ impl CPU {
         };
     }
 
-    fn handleinterrupt(&mut self) -> u32 {
+    fn handleinterrupt(&mut self) -> (u32, Option<Action>) {
         if self.ime == false && self.halted == false {
-            return 0;
+            return (0, None);
         }
 
         let triggered = self.mmu.inte & self.mmu.intf & 0x1F;
         if triggered == 0 {
-            return 0;
+            return (0, None);
         }
 
         self.halted = false;
         if self.ime == false {
-            return 0;
+            return (0, None);
         }
         self.ime = false;
 
         let n = triggered.trailing_zeros();
-        if n >= 5 {
-            panic!("Invalid interrupt triggered");
-        }
+        let action = match n {
+            0 => Action::VBlank,
+            1 => Action::Lcd,
+            2 => Action::Timer,
+            3 => Action::Serial,
+            4 => Action::Joypad,
+            _ => panic!("Invalid interrupt triggered"),
+        };
         self.mmu.intf &= !(1 << n);
         let pc = self.reg.pc;
         self.pushstack(pc);
         self.reg.pc = 0x0040 | ((n as u16) << 3);
 
-        4
+        (4, Some(action))
     }
 
     fn pushstack(&mut self, value: u16) {
@@ -149,9 +167,9 @@ impl CPU {
         res
     }
 
-    fn call(&mut self) -> u32 {
+    fn call(&mut self) -> (u32, Action) {
         let opcode = self.fetchbyte();
-        match opcode {
+        let cycles = match opcode {
             0x00 => 1,
             0x01 => {
                 let v = self.fetchword();
@@ -1021,7 +1039,7 @@ impl CPU {
                     3
                 }
             }
-            0xCB => self.call_cb(),
+            0xCB => return self.call_cb(),
             0xCC => {
                 if self.reg.getflag(Z) {
                     self.pushstack(self.reg.pc + 2);
@@ -1247,12 +1265,13 @@ impl CPU {
                 4
             }
             other => panic!("Instruction {:2X} is not implemented", other),
-        }
+        };
+        (cycles, Action::ExecutedOp(opcode))
     }
 
-    fn call_cb(&mut self) -> u32 {
+    fn call_cb(&mut self) -> (u32, Action) {
         let opcode = self.fetchbyte();
-        match opcode {
+        let cycles = match opcode {
             0x00 => {
                 self.reg.b = self.alu_rlc(self.reg.b);
                 2
@@ -2341,7 +2360,8 @@ impl CPU {
                 self.reg.a = self.reg.a | (1 << 7);
                 2
             }
-        }
+        };
+        (cycles, Action::ExecutedPrefixedOp(opcode))
     }
 
     fn alu_add(&mut self, b: u8, usec: bool) {
@@ -2612,7 +2632,7 @@ mod test {
             };
             let mut ticks = 0;
             while ticks < 63802933 * 4 {
-                ticks += c.do_cycle();
+                ticks += c.do_cycle().0;
             }
             for i in 0..c.mmu.gpu.data.len() {
                 sum_classic =
@@ -2649,7 +2669,7 @@ mod test {
             };
             let mut ticks = 0;
             while ticks < 63802933 * 2 {
-                ticks += c.do_cycle();
+                ticks += c.do_cycle().0;
             }
             for i in 0..c.mmu.gpu.data.len() {
                 sum_color =

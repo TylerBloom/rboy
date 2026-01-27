@@ -1,3 +1,4 @@
+use crate::cpu::Action;
 use crate::cpu::CPU;
 use crate::gbmode::GbMode;
 use crate::keypad::KeypadKey;
@@ -11,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Device {
-    cpu: CPU,
+    pub cpu: CPU,
     save_state: Option<String>,
 }
 
@@ -95,7 +96,7 @@ impl Device {
         })
     }
 
-    pub fn do_cycle(&mut self) -> u32 {
+    pub fn do_cycle(&mut self) -> (u32, Action) {
         self.cpu.do_cycle()
     }
 
