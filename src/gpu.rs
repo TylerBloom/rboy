@@ -101,7 +101,7 @@ impl GPU {
             data: vec![0; SCREEN_W * SCREEN_H * 3],
             bgprio: [PrioType::Normal; SCREEN_W],
             updated: false,
-            interrupt: 0,
+            interrupt: 1,
             gbmode: GbMode::Classic,
             cbgpal_inc: false,
             cbgpal_ind: 0,

@@ -371,7 +371,7 @@ fn run_cpu(mut cpu: Box<Device>, sender: SyncSender<Vec<u8>>, receiver: Receiver
 
     'outer: loop {
         while ticks < waitticks {
-            ticks += cpu.do_cycle();
+            ticks += cpu.do_cycle().0;
             if cpu.check_and_reset_gpu_updated() {
                 let data = cpu.get_gpu_data().to_vec();
                 if let Err(TrySendError::Disconnected(..)) = sender.try_send(data) {

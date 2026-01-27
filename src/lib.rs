@@ -1,5 +1,6 @@
 #![crate_name = "rboy"]
 #![crate_type = "lib"]
+#![allow(clippy::all)]
 
 pub use crate::gpu::{SCREEN_H, SCREEN_W};
 pub use crate::keypad::KeypadKey;

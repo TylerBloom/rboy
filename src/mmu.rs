@@ -21,7 +21,7 @@ enum DMAType {
 #[derive(Serialize, Deserialize)]
 pub struct MMU {
     #[serde(with = "serde_arrays")]
-    wram: [u8; WRAM_SIZE],
+    pub wram: [u8; WRAM_SIZE],
     #[serde(with = "serde_arrays")]
     zram: [u8; ZRAM_SIZE],
     hdma: [u8; 4],
@@ -73,7 +73,7 @@ impl MMU {
             hdma: [0; 4],
             wrambank: 1,
             inte: 0,
-            intf: 0,
+            intf: 1,
             serial: serial,
             timer: Timer::new(),
             keypad: Keypad::new(),
@@ -111,7 +111,7 @@ impl MMU {
             wrambank: 1,
             hdma: [0; 4],
             inte: 0,
-            intf: 0,
+            intf: 1,
             serial: serial,
             timer: Timer::new(),
             keypad: Keypad::new(),
@@ -235,7 +235,7 @@ impl MMU {
             0xFF70 => self.wrambank as u8,
             0xFF72..=0xFF73 => self.undocumented_cgb_regs[address as usize - 0xFF72],
             0xFF75 => self.undocumented_cgb_regs[2] | 0b10001111,
-            0xFF76..=0xFF77 => 0x00, // CGB PCM registers. Not yet implemented.
+            0xFF76..=0xFF77 => 0xFF, // CGB PCM registers. Not yet implemented.
             0xFF80..=0xFFFE => self.zram[address as usize & 0x007F],
             0xFFFF => self.inte,
             _ => 0xFF,
