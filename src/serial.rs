@@ -13,6 +13,17 @@ pub struct Serial {
     pub interrupt: u8,
 }
 
+impl Clone for Serial {
+    fn clone(&self) -> Self {
+        Self {
+            data: self.data.clone(),
+            control: self.control.clone(),
+            callback: None,
+            interrupt: self.interrupt.clone(),
+        }
+    }
+}
+
 impl Serial {
     pub fn new_with_callback(cb: Box<dyn SerialCallback>) -> Serial {
         Serial {

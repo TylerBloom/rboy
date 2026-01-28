@@ -10,7 +10,7 @@ use crate::sound;
 use crate::StrResult;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Device {
     pub cpu: CPU,
     save_state: Option<String>,

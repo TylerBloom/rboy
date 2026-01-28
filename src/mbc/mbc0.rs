@@ -2,7 +2,7 @@ use crate::mbc::MBC;
 use crate::StrResult;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MBC0 {
     rom: Vec<u8>,
 }
@@ -39,5 +39,9 @@ impl MBC for MBC0 {
     }
     fn check_and_reset_ram_updated(&mut self) -> bool {
         false
+    }
+
+    fn clone(&self) -> Box<dyn 'static + MBC> {
+        Box::new(Clone::clone(self))
     }
 }

@@ -23,6 +23,8 @@ pub trait MBC: Send {
     fn loadram(&mut self, ramdata: &[u8]) -> StrResult<()>;
     fn dumpram(&self) -> Vec<u8>;
 
+    fn clone(&self) -> Box<dyn 'static + MBC>;
+
     fn romname(&self) -> String {
         const TITLE_START: u16 = 0x134;
         const CGB_FLAG: u16 = 0x143;
@@ -66,6 +68,15 @@ pub fn get_mbc(data: Vec<u8>, skip_checksum: bool) -> StrResult<Box<dyn MBC + 's
 pub struct FileBackedMBC {
     rampath: path::PathBuf,
     mbc: Box<dyn MBC>,
+}
+
+impl Clone for FileBackedMBC {
+    fn clone(&self) -> Self {
+        Self {
+            rampath: self.rampath.clone(),
+            mbc: self.mbc.clone(),
+        }
+    }
 }
 
 impl FileBackedMBC {
@@ -131,6 +142,10 @@ impl MBC for FileBackedMBC {
 
     fn check_and_reset_ram_updated(&mut self) -> bool {
         self.mbc.check_and_reset_ram_updated()
+    }
+
+    fn clone(&self) -> Box<dyn 'static + MBC> {
+        Box::new(Clone::clone(self))
     }
 }
 

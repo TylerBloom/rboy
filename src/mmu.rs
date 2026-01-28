@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 const WRAM_SIZE: usize = 0x8000;
 const ZRAM_SIZE: usize = 0x7F;
 
-#[derive(PartialEq, Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize, Clone)]
 enum DMAType {
     NoDMA,
     GDMA,
@@ -43,6 +43,33 @@ pub struct MMU {
     gbspeed: GbSpeed,
     speed_switch_req: bool,
     undocumented_cgb_regs: [u8; 3], // 0xFF72, 0xFF73, 0xFF75
+}
+
+impl Clone for MMU {
+    fn clone(&self) -> Self {
+        Self {
+            wram: self.wram,
+            zram: self.zram,
+            hdma: self.hdma,
+            inte: self.inte,
+            intf: self.intf,
+            serial: self.serial.clone(),
+            timer: self.timer.clone(),
+            keypad: self.keypad.clone(),
+            gpu: self.gpu.clone(),
+            sound: None,
+            hdma_status: self.hdma_status.clone(),
+            hdma_src: self.hdma_src,
+            hdma_dst: self.hdma_dst,
+            hdma_len: self.hdma_len,
+            wrambank: self.wrambank,
+            mbc: self.mbc.clone(),
+            gbmode: self.gbmode,
+            gbspeed: self.gbspeed,
+            speed_switch_req: self.speed_switch_req,
+            undocumented_cgb_regs: self.undocumented_cgb_regs,
+        }
+    }
 }
 
 fn fill_random(slice: &mut [u8], start: u32) {

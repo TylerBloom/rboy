@@ -6,7 +6,7 @@ use std::convert::TryInto;
 use std::io::prelude::*;
 use std::time;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MBC3 {
     rom: Vec<u8>,
     ram: Vec<u8>,
@@ -217,5 +217,9 @@ impl MBC for MBC3 {
         let result = self.ram_updated;
         self.ram_updated = false;
         result
+    }
+
+    fn clone(&self) -> Box<dyn 'static + MBC> {
+        Box::new(Clone::clone(self))
     }
 }

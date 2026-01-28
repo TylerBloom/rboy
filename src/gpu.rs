@@ -14,7 +14,7 @@ enum PrioType {
     Normal,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct GPU {
     mode: u8,
     modeclock: u32,

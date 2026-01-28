@@ -19,7 +19,7 @@ pub enum Action {
     Stopped,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct CPU {
     pub reg: Registers,
     pub mmu: MMU,
